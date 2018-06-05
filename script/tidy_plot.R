@@ -3,8 +3,6 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(waterData)
-library("viridis")
-
 
 #station to analyze
 station = '02323500'   
@@ -45,9 +43,8 @@ ggplot(dis_flow, aes(x = Date_no_year, y = val)) +
   #geom_point(data = dis_time, aes(x = Date_day, shape = factor(year(Date_day))), colour = "black") +
   scale_colour_gradientn(name = "Discharge Percentile", colours = rainbow(10)) +
   scale_shape_discrete(name = "Year") +
-  theme_minimal() +
-  labs(title = "Historical flow relative to current year",
-       x = "Date", y = "Discharge (ft^3/s)")
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Date", y = "Discharge (ft^3/s)")
 
 
 
@@ -76,15 +73,28 @@ dis %>%
 
 
 
+
+dis_flow <- dis %>%
+  mutate(dayofyear = yday(Date), Year = year(Date)) %>%
+  filter(dayofyear %in% yday(seq.Date(from = (Sys.Date()-365), 
+                                      to = Sys.Date(), by = "day"))) %>%
+  group_by(dayofyear) %>%
+  mutate(prctile = ecdf(val)(val)) %>%
+  mutate(Date_no_year = dmy(paste0(day(Date),"-",month(Date),"-",year(Sys.Date())))) %>%
+  ungroup()
+
+
 windows()
 dis %>%
   mutate(dayofyear = yday(Date), Year = year(Date)) %>%
   mutate(dayofyear_formatted = as.Date(dayofyear - 1, origin = "1950-01-01")) %>% 
-  ggplot(aes(x = dayofyear_formatted, y = Year, fill = val)) +
+  mutate(prctile = ecdf(val)(val)) %>%
+  ggplot(aes(x = dayofyear_formatted, y = Year, fill = prctile)) +
   geom_tile() +
   scale_x_date(date_labels = "%b") +
-  scale_y_reverse(expand = c(0, 0), breaks= c(1950,1970,1990,2010)) +
-  scale_fill_gradientn(name = "Discharge (ft^3/s) ", colours = rainbow(20)) +
-  labs(y = "Year", x = "Date") +
-  theme_minimal() +
-  theme(legend.position="right")
+  scale_y_reverse(expand = c(0, 0), breaks= c(1950,1960,1970, 1980,1990,2000,2010)) +
+  scale_fill_gradientn(name = "Percentile ", colours = rainbow(20)) +
+  labs(y = "Year", x = "Date")+ 
+  theme(text = element_text(size=20))
+
+ggsave("quantile_tile.png", width= 10, height= 10)
