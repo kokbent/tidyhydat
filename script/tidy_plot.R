@@ -29,14 +29,14 @@ dis_flow <- dis %>%
 
 dis_time<- dis%>%
   mutate(Date_day = as.Date(Date)) %>%
-  filter(Date_day %in% day(seq.Date(from = (Sys.Date()-365), 
+  filter(Date_day %in% day(seq.Date(from = (Sys.Date()-30), 
                                     to = Sys.Date(), by = "day"))) %>%
   group_by(Date_day) %>%
   summarise(val = mean(val, na.rm = TRUE)) %>%
   ungroup()  
 
 
-
+windows()
 ggplot(dis_flow, aes(x = Date_no_year, y = val)) +
   geom_point(aes(colour = prctile)) +
   #geom_line(data = dis_time, aes(x = Date_day), colour = "black") +
